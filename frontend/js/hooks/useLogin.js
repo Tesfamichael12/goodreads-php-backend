@@ -1,23 +1,44 @@
-import { useState } from 'react';
 
-const useLogin = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
+const createLoginHandler = () => {
+  let isLoading = false;
+  let error = null;
+  let user = null;
+  const eventTarget = new EventTarget();
 
-  const login = async (username, password) => {
-    setIsLoading(true);
+  // Private state management
+  const setLoading = (state) => {
+    isLoading = state;
+    dispatchEvent('loading', isLoading);
+  };
+
+  const setError = (err) => {
+    error = err;
+    dispatchEvent('error', error);
+  };
+
+  const setUser = (userData) => {
+    user = userData;
+    dispatchEvent('user', user);
+  };
+
+  const dispatchEvent = (type, detail) => {
+    eventTarget.dispatchEvent(new CustomEvent(type, { detail }));
+  };
+
+  // Public methods
+  const login = async (email, password) => {
+    setLoading(true);
     setError(null);
     setUser(null);
     
     try {
       const response = await fetch('../backend/auth/login.php', {
         method: 'POST',
-        credentials: 'include', // Important for sessions to work
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -32,11 +53,20 @@ const useLogin = () => {
       setError(err.message);
       return { success: false, message: err.message };
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  return { login, isLoading, error, user };
-};
+  // Event subscription
+  const on = (event, callback) => {
+    eventTarget.addEventListener(event, (e) => callback(e.detail));
+  };
 
-export default useLogin;
+  return {
+    login,
+    on,
+    get isLoading() { return isLoading; },
+    get error() { return error; },
+    get user() { return user; }
+  };
+};

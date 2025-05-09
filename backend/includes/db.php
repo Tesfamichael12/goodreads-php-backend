@@ -8,6 +8,7 @@ class Database {
     private $username = 'root';
     private $password = '';
     private $conn;
+    // private $port = 3308; ";port=" .  $this->port .
 
     /**
      * Get the database connection

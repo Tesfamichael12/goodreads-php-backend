@@ -220,12 +220,52 @@
           <div class="author-search-container search-container">
             <input
               type="search"
-              placeholder="Search books and authors"
-              class="authors-search-input search-input"
+              placeholder="Search books"
+              class="search-input"
             />
           </div>
 
+          <section class="search-result" style="display: none; margin-bottom: 75px;">
+            <h2 class="section-title">Search Results</h2>
+            <div class="book-grid" id="search-results"></div>
+          </section>
+
           <section class="book-section">
+            <h2 class="section-title">MOST READ THIS WEEK</h2>
+            <div class="book-grid">
+              <div class="book-card">
+                <a href="./Pages/BookDisplay.html">
+                  <img
+                    src="./assets/image/books-image/book1.png"
+                    alt="Phantasma by Kaylie Smith"
+                    class="book-cover"
+                  />
+                </a>
+              </div>
+              <div class="book-card">
+                <a href="./Pages/BookDisplay.html">
+                  <img
+                    src="./assets/image/books-image/book2.png"
+                    alt="Blue Sisters by Coco Mellors"
+                    class="book-cover"
+                  />
+                </a>
+              </div>
+              <div class="book-card">
+                <a href="./Pages/BookDisplay.html">
+                  <img
+                    src="./assets/image/books-image/book3.png"
+                    alt="The Assassin's Blade"
+                    class="book-cover"
+                  />
+                </a>
+              </div>
+            </div>
+          </section>
+
+
+            <section class="book-section">
+            
             <h2 class="section-title">MOST READ THIS WEEK</h2>
             <div class="book-grid">
               <div class="book-card">
@@ -510,5 +550,6 @@
 
     <!-- Add auth state handler script -->
     <script src="./js/authStateHandler.js"></script>
+    <script src="./js/searchBook.js"></script>
   </body>
 </html>

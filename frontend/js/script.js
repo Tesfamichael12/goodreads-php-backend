@@ -120,3 +120,173 @@ document.addEventListener("DOMContentLoaded", function () {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   }
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+  // Select all like buttons for reviews
+  document.querySelectorAll(".book-review-action-btn[data-review-id]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const reviewId = btn.getAttribute("data-review-id");
+      const likeCountElem = btn.querySelector(".like-count");
+      let count = parseInt(likeCountElem.textContent.replace(/,/g, "")) || 0;
+      const liked = btn.classList.toggle("liked");
+      const action = liked ? "like" : "unlike";
+      fetch("http://localhost/goodreads-php-backend/backend/likes/review.php", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          review_id: reviewId,
+          action: action
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // Update like count if backend returns it, else update locally
+            if (typeof data.like_count !== "undefined") {
+              likeCountElem.textContent = data.like_count;
+            } else {
+              likeCountElem.textContent = liked ? count + 1 : count - 1;
+            }
+            btn.querySelector(".like-label").textContent = liked ? "Liked" : "Like";
+          } else {
+            alert(data.message || "Error updating like.");
+            btn.classList.toggle("liked"); // revert UI if error
+          }
+        });
+    });
+  });
+});
+
+// === Book Reviews, Comments, and Rating Logic ===
+document.addEventListener("DOMContentLoaded", function () {
+  // Set your bookId here (replace with dynamic value if needed)
+  const bookId = 1;
+
+  // --- 1. Render Average Rating ---
+  function renderAverageRating() {
+    fetch(`/backend/reviews/average.php?book_id=${bookId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.avg_rating !== undefined) {
+          document.querySelectorAll('.rating-number').forEach(el => el.textContent = data.avg_rating);
+        }
+        if (data.count !== undefined) {
+          document.querySelectorAll('.rating-count').forEach(el => el.textContent = `${data.count} ratings`);
+        }
+      });
+  }
+
+  // --- 2. Render Reviews ---
+  function renderReviews() {
+    fetch(`/backend/reviews/list.php?book_id=${bookId}`)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.querySelector('.book-review-container');
+        if (!container) return;
+        container.innerHTML = '';
+        data.reviews.forEach(review => {
+          const reviewDiv = document.createElement('div');
+          reviewDiv.className = 'book-review-item';
+          reviewDiv.innerHTML = `
+            <div class="book-review-header">
+              <div class="book-review-user">
+                <img src="../assets/image/user-and-author-profile/${review.profile_pic}" class="book-review-avatar" />
+                <div class="book-review-user-info">
+                  <div class="book-review-username">${review.name}</div>
+                </div>
+              </div>
+            </div>
+            <div class="book-review-content">
+              <div class="book-review-rating">
+                <div class="book-review-stars">
+                  ${[1,2,3,4,5].map(i => `<span class="book-review-star${i <= review.rating ? ' filled' : ''}">★</span>`).join('')}
+                </div>
+              </div>
+              <p class="book-review-text">${review.comment}</p>
+              <div class="book-review-actions">
+                <span>${review.like_count} likes</span>
+                <span>${review.comment_count} comments</span>
+              </div>
+              <div class="review-comments" data-review-id="${review.id}">
+                <div class="comments-list"></div>
+                <form class="comment-form">
+                  <input type="text" class="comment-input" placeholder="Add a comment..." required>
+                  <button type="submit">Post</button>
+                </form>
+              </div>
+            </div>
+          `;
+          container.appendChild(reviewDiv);
+          renderComments(review.id);
+          setupCommentForm(review.id);
+        });
+      });
+  }
+
+  // --- 3. Render Comments for a Review ---
+  function renderComments(reviewId) {
+    fetch(`/backend/comments/list.php?review_id=${reviewId}`)
+      .then(res => res.json())
+      .then(data => {
+        const commentsList = document.querySelector(`.review-comments[data-review-id="${reviewId}"] .comments-list`);
+        if (!commentsList) return;
+        commentsList.innerHTML = data.comments.map(comment => `
+          <div class="comment-item">
+            <img src="../assets/image/user-and-author-profile/${comment.profile_pic}" class="comment-avatar" />
+            <span class="comment-user">${comment.name}</span>
+            <span class="comment-content">${comment.content}</span>
+          </div>
+        `).join('');
+      });
+  }
+
+  // --- 4. Submit a Comment ---
+  function setupCommentForm(reviewId) {
+    const form = document.querySelector(`.review-comments[data-review-id="${reviewId}"] .comment-form`);
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const input = form.querySelector('.comment-input');
+      fetch('/backend/comments/submit.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ review_id: reviewId, content: input.value })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          input.value = '';
+          renderComments(reviewId);
+        }
+      });
+    });
+  }
+
+  // --- 5. Submit Book Rating (Stars) ---
+  document.querySelectorAll('.book-cover-section .stars .star').forEach((star, idx, starsArr) => {
+    star.addEventListener('click', function () {
+      const rating = idx + 1;
+      fetch('/backend/reviews/submit.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ book_id: bookId, rating: rating, comment: '' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Update UI: fill stars up to selected
+          starsArr.forEach((s, i) => {
+            if (i < rating) s.classList.remove('empty');
+            else s.classList.add('empty');
+          });
+          renderAverageRating();
+        }
+      });
+    });
+  });
+
+  // --- 6. Initial Render ---
+  renderAverageRating();
+  renderReviews();
+});

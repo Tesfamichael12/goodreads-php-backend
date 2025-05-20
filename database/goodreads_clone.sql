@@ -104,7 +104,7 @@ CREATE TABLE `comments` (
 );
 
 -- Review Likes Table
-CREATE TABLE `review_likes` (
+CREATE TABLE IF NOT EXISTS `review_likes` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
   `review_id` INT NOT NULL,
   `user_id` INT NOT NULL,
@@ -115,7 +115,7 @@ CREATE TABLE `review_likes` (
 );
 
 -- Comment Likes Table
-CREATE TABLE `comment_likes` (
+CREATE TABLE IF NOT EXISTS `comment_likes` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
   `comment_id` INT NOT NULL,
   `user_id` INT NOT NULL,

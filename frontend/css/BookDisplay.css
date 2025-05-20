@@ -1280,6 +1280,11 @@ body {
   font-size: 1rem;
 }
 
+.book-review-action-btn.liked {
+  color: #3e8570;
+  font-weight: bold;
+}
+
 @media (max-width: 640px) {
   .book-review-content {
     margin-left: 0;
